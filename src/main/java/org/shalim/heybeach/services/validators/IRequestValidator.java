@@ -1,9 +1,8 @@
 package org.shalim.heybeach.services.validators;
 
-import java.util.Map;
-
-import org.shalim.heybeach.util.ReturnCode;
+import org.shalim.heybeach.domain.requests.IRequest;
+import org.springframework.validation.Errors;
 
 public interface IRequestValidator {
-	ReturnCode validateRequest(Map<String, String> params);
+	IRequest validateRequest(String requestJson, Errors errors);
 }

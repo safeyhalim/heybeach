@@ -1,33 +1,65 @@
 package org.shalim.heybeach.services.validators;
 
-import java.util.Map;
+import java.io.IOException;
 import java.util.regex.Pattern;
 
-import org.shalim.heybeach.controllers.requests.RegisterRequestParams;
+import org.shalim.heybeach.domain.requests.IRequest;
+import org.shalim.heybeach.domain.requests.RegisterRequest;
 import org.shalim.heybeach.util.ReturnCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.validation.Errors;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class RegisterRequestValidator implements IRequestValidator {
+	private Logger LOGGER = LoggerFactory.getLogger(RegisterRequestValidator.class);
 	private static Pattern emailPattern = Pattern
 			.compile("^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$");
 
+	private static ObjectMapper mapper = new ObjectMapper();
+
 	@Override
-	public ReturnCode validateRequest(Map<String, String> params) {
-		if (params == null || params.isEmpty()) {
-			return ReturnCode.INVALID_REQUEST_NO_PARAMS;
+	public IRequest validateRequest(String requestJson, Errors errors) {
+		if (StringUtils.isEmpty(requestJson)) {
+			addError(ReturnCode.INVALID_REQUEST_NO_PARAMS, errors);
+			return null;
 		}
-		String email = params.get(RegisterRequestParams.EMAIL.getParamName());
-		String password = params.get(RegisterRequestParams.PASSWORD.getParamName());
-		String repeatedPassword = params.get(RegisterRequestParams.REPEATED_PASSWORD.getParamName());
 
-		ReturnCode emailValidationCode = validateEmail(email);
+		RegisterRequest registerRequest = parseRequest(requestJson);
+		if (registerRequest == null) {
+			addError(ReturnCode.INVALID_REQUEST, errors);
+			return null;
+		}
+
+		ReturnCode emailValidationCode = validateEmail(registerRequest.getEmail());
 		if (emailValidationCode != ReturnCode.SUCCESS) {
-			return emailValidationCode;
+			addError(emailValidationCode, errors);
 		}
 
-		return validatePassword(password, repeatedPassword);
+		ReturnCode passwordValidationCode = validatePassword(registerRequest.getPassword(),
+				registerRequest.getRepeatedPassword());
+		if (passwordValidationCode != ReturnCode.SUCCESS) {
+			addError(passwordValidationCode, errors);
+		}
+
+		return registerRequest;
+	}
+
+	private void addError(ReturnCode returnCode, Errors errors) {
+		errors.reject(returnCode.getCode(), returnCode.getMessage());
+	}
+
+	private RegisterRequest parseRequest(String requestJson) {
+		try {
+			return mapper.readValue(requestJson, RegisterRequest.class);
+		} catch (IOException e) {
+			LOGGER.error("Unable to parse Register request. Exception: {}", e);
+			return null;
+		}
 	}
 
 	private ReturnCode validateEmail(String email) {

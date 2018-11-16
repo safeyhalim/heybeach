@@ -1,12 +1,12 @@
 package org.shalim.heybeach.controllers;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import org.shalim.heybeach.controllers.requests.RegisterRequestParams;
+import org.shalim.heybeach.domain.requests.RegisterRequest;
+import org.shalim.heybeach.domain.responses.ResponseFactory;
+import org.shalim.heybeach.services.UserService;
 import org.shalim.heybeach.services.validators.RegisterRequestValidator;
-import org.shalim.heybeach.util.ReturnCode;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.validation.Errors;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -19,27 +19,17 @@ public class RegisterController {
 	@Autowired
 	RegisterRequestValidator registerRequestValidator;
 
-	@RequestMapping(value = "/register", method = RequestMethod.POST)
-	public String registerNewUser(@RequestBody String email, @RequestBody String password,
-			@RequestBody String repeatedPassword) {
+	@Autowired
+	UserService userService;
 
-		ReturnCode validationResult = registerRequestValidator
-				.validateRequest(createRegisterRequestParams(email, password, repeatedPassword));
-		if (validationResult != ReturnCode.SUCCESS) {
-			return validationResult.getMessage();
+	@RequestMapping(value = "/register", method = RequestMethod.POST)
+	public ResponseEntity<?> registerNewUser(@RequestBody String registerRequestJson, Errors errors) {
+		RegisterRequest registerRequest = (RegisterRequest) registerRequestValidator
+				.validateRequest(registerRequestJson, errors);
+		if (errors.hasErrors()) {
+			return ResponseFactory.createErrorResponse(errors);
 		}
 
-		return ReturnCode.SUCCESS.getMessage();
-	}
-
-	private Map<String, String> createRegisterRequestParams(String email, String password, String repeatedPassword) {
-		return new HashMap<String, String>() {
-			private static final long serialVersionUID = 1L;
-			{
-				put(RegisterRequestParams.EMAIL.getParamName(), email);
-				put(RegisterRequestParams.PASSWORD.getParamName(), password);
-				put(RegisterRequestParams.REPEATED_PASSWORD.getParamName(), repeatedPassword);
-			}
-		};
+		return ResponseFactory.createResponse(userService.save(registerRequest));
 	}
 }
