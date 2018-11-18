@@ -1,8 +1,10 @@
 package org.shalim.heybeach.services.validators;
 
-import org.shalim.heybeach.domain.requests.IRequest;
-import org.springframework.validation.Errors;
+import java.util.List;
 
-public interface IRequestValidator {
-	IRequest validateRequest(String requestJson, Errors errors);
+import org.shalim.heybeach.domain.requests.IRequest;
+import org.shalim.heybeach.util.ReturnCode;
+
+public interface IRequestValidator<T> {
+	public IRequest validateRequest(T request, List<ReturnCode> errors);
 }

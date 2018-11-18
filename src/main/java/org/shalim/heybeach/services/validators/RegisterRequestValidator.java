@@ -1,6 +1,7 @@
 package org.shalim.heybeach.services.validators;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import org.shalim.heybeach.domain.requests.IRequest;
@@ -10,12 +11,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import org.springframework.validation.Errors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
-public class RegisterRequestValidator implements IRequestValidator {
+public class RegisterRequestValidator implements IRequestValidator<String> {
 	private Logger LOGGER = LoggerFactory.getLogger(RegisterRequestValidator.class);
 	private static Pattern emailPattern = Pattern
 			.compile("^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$");
@@ -23,34 +23,30 @@ public class RegisterRequestValidator implements IRequestValidator {
 	private static ObjectMapper mapper = new ObjectMapper();
 
 	@Override
-	public IRequest validateRequest(String requestJson, Errors errors) {
+	public IRequest validateRequest(String requestJson, List<ReturnCode> errors) {
 		if (StringUtils.isEmpty(requestJson)) {
-			addError(ReturnCode.INVALID_REQUEST_NO_PARAMS, errors);
+			errors.add(ReturnCode.INVALID_REQUEST_NO_PARAMS);
 			return null;
 		}
 
 		RegisterRequest registerRequest = parseRequest(requestJson);
 		if (registerRequest == null) {
-			addError(ReturnCode.INVALID_REQUEST, errors);
+			errors.add(ReturnCode.INVALID_REQUEST);
 			return null;
 		}
 
 		ReturnCode emailValidationCode = validateEmail(registerRequest.getEmail());
 		if (emailValidationCode != ReturnCode.SUCCESS) {
-			addError(emailValidationCode, errors);
+			errors.add(emailValidationCode);
 		}
 
 		ReturnCode passwordValidationCode = validatePassword(registerRequest.getPassword(),
 				registerRequest.getRepeatedPassword());
 		if (passwordValidationCode != ReturnCode.SUCCESS) {
-			addError(passwordValidationCode, errors);
+			errors.add(passwordValidationCode);
 		}
 
 		return registerRequest;
-	}
-
-	private void addError(ReturnCode returnCode, Errors errors) {
-		errors.reject(returnCode.getCode(), returnCode.getMessage());
 	}
 
 	private RegisterRequest parseRequest(String requestJson) {

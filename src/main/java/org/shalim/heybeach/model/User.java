@@ -1,9 +1,14 @@
 package org.shalim.heybeach.model;
 
+import java.util.Set;
+
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 @Entity
@@ -12,6 +17,7 @@ public class User {
 	private Long id;
 	private String email;
 	private String password;
+	private Set<Photo> photos;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
@@ -37,5 +43,14 @@ public class User {
 
 	public void setPassword(String password) {
 		this.password = password;
+	}
+
+	@OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	public Set<Photo> getPhotos() {
+		return photos;
+	}
+
+	public void setPhotos(Set<Photo> photos) {
+		this.photos = photos;
 	}
 }
